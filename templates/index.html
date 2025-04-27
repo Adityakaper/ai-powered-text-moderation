@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI-Powered Content Moderation</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background-color: #021027;
+        }
+
+        .background-container {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: -1;
+        }
+
+        .background {
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            object-fit: cover;
+            width: 100%;
+            height: 100%;
+            mask-image: radial-gradient(white 0%, white 30%, transparent 80%, transparent);
+        }
+
+        .circle-container {
+            position: absolute;
+            transform: translateY(-10vh);
+            animation-iteration-count: infinite;
+            animation-timing-function: linear;
+        }
+
+        .circle {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            mix-blend-mode: screen;
+            background-image: radial-gradient(
+                hsl(180, 100%, 80%),
+                hsl(180, 100%, 80%) 10%,
+                hsla(180, 100%, 80%, 0) 56%
+            );
+            animation: fade-frames 200ms infinite, scale-frames 2s infinite;
+        }
+
+        @keyframes fade-frames {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+
+        @keyframes scale-frames {
+            0% { transform: scale3d(0.4, 0.4, 1); }
+            50% { transform: scale3d(2.2, 2.2, 1); }
+            100% { transform: scale3d(0.4, 0.4, 1); }
+        }
+
+        header {
+            background-color: rgba(0, 123, 255, 0.9);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            font-size: 24px;
+        }
+
+        .container {
+    max-width: 800px;
+    margin: 20px auto;
+    background: rgba(255, 255, 255, 0.7); /* Changed from 0.95 to 0.7 for more transparency */
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    position: relative;
+    z-index: 1;
+}
+
+
+
+        textarea, input[type="file"] {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        button {
+            background-color: #007BFF;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        #results {
+            margin-top: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #007BFF;
+            color: white;
+        }
+
+        tr:nth-child(even) {
+            background-color: rgba(249, 249, 249, 0.9);
+        }
+
+        tr:hover {
+            background-color: rgba(241, 241, 241, 0.9);
+        }
+    </style>
+</head>
+<body>
+    <div class="background-container">
+        <img src="https://s3-us-west-2.amazonaws.com/s.cdpn.io/221808/sky.jpg" class="background">
+        <div id="circles"></div>
+    </div>
+
+    <header>
+        AI-Powered Content Moderation
+    </header>
+    
+    <div class="container">
+        <form id="moderationForm">
+            <label for="content">Enter Text for Moderation:</label>
+            <textarea id="content" name="content" rows="4" placeholder="Type your content here..."></textarea>
+
+            <label for="file">Or Upload a .txt File:</label>
+            <input type="file" id="file" name="file" accept=".txt">
+
+            <button type="submit">Moderate</button>
+        </form>
+
+        <div id="results">
+            <h2>Moderation Results</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Category</th>
+                        <th>Score</th>
+                    </tr>
+                </thead>
+                <tbody id="resultsTable"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // Generate circles
+        const circlesDiv = document.getElementById('circles');
+        for (let i = 1; i <= 100; i++) {
+            const circleContainer = document.createElement('div');
+            circleContainer.className = 'circle-container';
+            circleContainer.style.width = Math.random() * 8 + 'px';
+            circleContainer.style.height = circleContainer.style.width;
+            
+            const circle = document.createElement('div');
+            circle.className = 'circle';
+            
+            circleContainer.appendChild(circle);
+            circlesDiv.appendChild(circleContainer);
+
+            // Add random animations
+            const startPositionY = Math.random() * 10 + 100;
+            const duration = 28000 + Math.random() * 9000;
+            const delay = Math.random() * 37000;
+
+            circleContainer.style.animation = `
+                move-frames-${i} ${duration}ms infinite linear ${delay}ms
+            `;
+
+            // Create keyframe animation
+            const keyframes = `
+                @keyframes move-frames-${i} {
+                    from { transform: translate3d(${Math.random() * 100}vw, ${startPositionY}vh, 0); }
+                    to { transform: translate3d(${Math.random() * 100}vw, ${-startPositionY - Math.random() * 30}vh, 0); }
+                }
+            `;
+
+            const styleSheet = document.createElement('style');
+            styleSheet.textContent = keyframes;
+            document.head.appendChild(styleSheet);
+        }
+
+        // Keep your existing jQuery code
+        $(document).ready(function () {
+            $('#results').hide();
+            $('#moderationForm').on('submit', function (event) {
+                event.preventDefault();
+                const formData = new FormData(this);
+                $.ajax({
+                    url: '/moderate',
+                    type: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    success: function (data) {
+                        $('#resultsTable').empty();
+                        if (data.error) {
+                            alert(data.error);
+                            return;
+                        }
+                        for (const [category, score] of Object.entries(data)) {
+                            $('#resultsTable').append(`<tr><td>${category}</td><td>${score.toFixed(2)}</td></tr>`);
+                        }
+                        $('#results').show();
+                    },
+                    error: function (err) {
+                        alert('An error occurred: ' + err.responseText);
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
